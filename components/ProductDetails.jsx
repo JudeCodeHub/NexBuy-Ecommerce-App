@@ -8,6 +8,7 @@ import Image from "next/image";
 import Counter from "./Counter";
 import { useDispatch, useSelector } from "react-redux";
 import WishlistButton from "./WishlistButton";
+import MessageSellerButton from "./MessageSellerButton";
 
 const trustPoints = [
     { icon: EarthIcon, label: "Free shipping worldwide" },
@@ -112,6 +113,7 @@ const ProductDetails = ({ product }) => {
                         size={18}
                         className="shrink-0 flex items-center justify-center gap-2 h-[52px] px-6 rounded-lg border border-white/10 bg-panel hover:border-accent/60 text-sm font-semibold text-slate-200 transition-colors"
                     />
+                    <MessageSellerButton productId={productId} />
                 </div>
 
                 <hr className="border-white/10 mt-2" />

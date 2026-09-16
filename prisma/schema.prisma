@@ -16,11 +16,13 @@ model User {
     cart  Json   @default("{}")
 
     // Relations
-    ratings     Rating[]
-    Address     Address[]
-    store       Store?
-    buyerOrders Order[]   @relation("BuyerRelation")
-    wishlist    Wishlist[]
+    ratings       Rating[]
+    Address       Address[]
+    store         Store?
+    buyerOrders   Order[]        @relation("BuyerRelation")
+    wishlist      Wishlist[]
+    conversations Conversation[]
+    messages      Message[]
 }
 
 // Required for creating a Product: name, description, mrp, price, images, category, storeId
@@ -41,10 +43,11 @@ model Product {
     updatedAt   DateTime @updatedAt
 
     // Relations
-    store        Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
-    orderItems   OrderItem[]
-    rating       Rating[]
-    wishlistedBy Wishlist[]
+    store         Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+    orderItems    OrderItem[]
+    rating        Rating[]
+    wishlistedBy  Wishlist[]
+    conversations Conversation[]
 }
 
 // Required for creating a Wishlist entry: userId, productId
@@ -186,7 +189,52 @@ model Store {
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
 
-    Product Product[]
-    Order   Order[]
-    user    User      @relation(fields: [userId], references: [id])
+    Product       Product[]
+    Order         Order[]
+    user          User           @relation(fields: [userId], references: [id])
+    conversations Conversation[]
+}
+
+enum ConversationStatus {
+    PENDING
+    ACTIVE
+    DECLINED
+}
+
+// A buyer asking a store about a specific product. Starts PENDING with the
+// buyer's one opening message; the seller must accept before either side can
+// send more. One thread per buyer+product+store.
+model Conversation {
+    id        String             @id @default(cuid())
+    productId String
+    buyerId   String
+    storeId   String
+    status    ConversationStatus @default(PENDING)
+    createdAt DateTime           @default(now())
+    updatedAt DateTime           @updatedAt
+
+    // Relations
+    product  Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+    buyer    User      @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+    store    Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+    messages Message[]
+
+    @@unique([productId, buyerId, storeId])
+    @@index([storeId, status])
+    @@index([buyerId])
+}
+
+model Message {
+    id             String    @id @default(cuid())
+    conversationId String
+    senderId       String
+    body           String
+    readAt         DateTime?
+    createdAt      DateTime  @default(now())
+
+    // Relations
+    conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+    sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+    @@index([conversationId, createdAt])
 }

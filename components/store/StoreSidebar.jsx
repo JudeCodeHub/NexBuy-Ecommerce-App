@@ -1,17 +1,44 @@
 "use client";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   HomeIcon,
   LayoutListIcon,
+  MessageCircleIcon,
   SquarePenIcon,
   SquarePlusIcon,
   StoreIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useAuth } from "@clerk/nextjs";
+import axios from "axios";
 
 const StoreSidebar = ({ storeInfo }) => {
   const pathname = usePathname();
+  const { getToken } = useAuth();
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    const fetchPendingCount = async () => {
+      try {
+        const token = await getToken();
+        const { data } = await axios.get("/api/store/messages/pending-count", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setPendingCount(data.count);
+      } catch (error) {
+        // Non-critical badge; ignore.
+      }
+    };
+    fetchPendingCount();
+    const interval = setInterval(fetchPendingCount, 30000);
+    window.addEventListener("messages-updated", fetchPendingCount);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("messages-updated", fetchPendingCount);
+    };
+  }, []);
 
   const sidebarLinks = [
     { name: "Dashboard", href: "/store", icon: HomeIcon },
@@ -22,6 +49,7 @@ const StoreSidebar = ({ storeInfo }) => {
       icon: SquarePenIcon,
     },
     { name: "Orders", href: "/store/orders", icon: LayoutListIcon },
+    { name: "Inbox", href: "/store/messages", icon: MessageCircleIcon, badge: pendingCount },
   ];
 
   return (
@@ -47,7 +75,10 @@ const StoreSidebar = ({ storeInfo }) => {
 
       <nav className="flex flex-col gap-1 px-3 max-sm:mt-6 max-sm:px-2">
         {sidebarLinks.map((link, index) => {
-          const isActive = pathname === link.href;
+          const isActive =
+            link.href === "/store"
+              ? pathname === link.href
+              : pathname === link.href || pathname.startsWith(`${link.href}/`);
           return (
             <Link
               key={index}
@@ -62,7 +93,12 @@ const StoreSidebar = ({ storeInfo }) => {
                 <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-accent" />
               )}
               <link.icon size={18} className="shrink-0 sm:ml-1" />
-              <p className="max-sm:hidden">{link.name}</p>
+              <p className="max-sm:hidden flex-1">{link.name}</p>
+              {!!link.badge && (
+                <span className="min-w-5 h-5 px-1.5 rounded-full bg-accent text-slate-900 text-[11px] font-bold flex items-center justify-center max-sm:hidden">
+                  {link.badge}
+                </span>
+              )}
             </Link>
           );
         })}

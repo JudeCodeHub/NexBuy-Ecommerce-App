@@ -1,5 +1,5 @@
 "use client";
-import { House, PackageIcon, PackageSearch, ShieldCheckIcon, ShoppingCart, StoreIcon } from "lucide-react";
+import { House, MessageCircleIcon, PackageIcon, PackageSearch, ShieldCheckIcon, ShoppingCart, StoreIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -15,6 +15,7 @@ const Navbar = () => {
   const cartCount = useSelector((state) => state.cart.total);
   const [isAdmin, setIsAdmin] = useState(false);
   const [storeStatus, setStoreStatus] = useState(null); // null = still checking
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const fetchIsAdmin = async () => {
@@ -41,16 +42,37 @@ const Navbar = () => {
       }
     };
 
+    const fetchUnreadCount = async () => {
+      try {
+        const token = await getToken();
+        const { data } = await axios.get("/api/messages/unread-count", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setUnreadCount(data.count);
+      } catch (error) {
+        setUnreadCount(0);
+      }
+    };
+
     if (user) {
       fetchIsAdmin();
       fetchStoreStatus();
+      fetchUnreadCount();
+      const interval = setInterval(fetchUnreadCount, 45000);
+      window.addEventListener("messages-updated", fetchUnreadCount);
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener("messages-updated", fetchUnreadCount);
+      };
     } else {
       setIsAdmin(false);
       setStoreStatus(null);
+      setUnreadCount(0);
     }
   }, [user]);
 
   const sellerCheckLoading = !!user && storeStatus === null;
+  const isApprovedSeller = storeStatus === "approved";
 
   const sellerLink =
     storeStatus === "approved"
@@ -110,6 +132,21 @@ const Navbar = () => {
               </Link>
             )}
 
+            {user && !isApprovedSeller && (
+              <Link
+                href="/messages"
+                className="relative flex items-center gap-2 text-slate-300 hover:text-amber-500 transition-colors"
+              >
+                <MessageCircleIcon size={18} />
+                Messages
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1.5 -right-2.5 min-w-4 h-4 px-1 flex items-center justify-center text-[9px] font-bold text-slate-900 bg-accent rounded-full">
+                    {unreadCount}
+                  </span>
+                )}
+              </Link>
+            )}
+
             {sellerCheckLoading ? (
               <div className="w-36 h-8 rounded-full bg-slate-800 animate-pulse" />
             ) : (
@@ -159,6 +196,13 @@ const Navbar = () => {
                     label="My Orders"
                     onClick={() => router.push("/orders")}
                   />
+                  {!isApprovedSeller && (
+                    <UserButton.Action
+                      labelIcon={<MessageCircleIcon size={16} />}
+                      label={unreadCount > 0 ? `Messages (${unreadCount})` : "Messages"}
+                      onClick={() => router.push("/messages")}
+                    />
+                  )}
                   {!sellerCheckLoading && (
                     <UserButton.Action
                       labelIcon={<StoreIcon size={16} />}
