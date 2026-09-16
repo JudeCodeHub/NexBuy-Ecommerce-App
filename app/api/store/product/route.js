@@ -17,6 +17,7 @@ export async function POST(request) {
     const formData = await request.formData();
 
     const name = formData.get("name");
+    const brand = formData.get("brand") || null;
     const description = formData.get("description");
     const mrp = Number(formData.get("mrp"));
     const price = Number(formData.get("price"));
@@ -61,6 +62,7 @@ export async function POST(request) {
     await prisma.product.create({
       data: {
         name,
+        brand,
         description,
         mrp,
         price,
@@ -119,6 +121,7 @@ export async function PUT(request) {
 
     const productId = formData.get("productId");
     const name = formData.get("name");
+    const brand = formData.get("brand") || null;
     const description = formData.get("description");
     const mrp = Number(formData.get("mrp"));
     const price = Number(formData.get("price"));
@@ -178,6 +181,7 @@ export async function PUT(request) {
       where: { id: productId, storeId },
       data: {
         name,
+        brand,
         description,
         mrp,
         price,

@@ -14,6 +14,7 @@ import { useAuth } from "@clerk/nextjs";
 import toast from "react-hot-toast";
 import SellerRevenueChart from "@/components/SellerRevenueChart";
 import TopProducts from "@/components/TopProducts";
+import AiInsightCard from "@/components/AiInsightCard";
 
 export default function Dashboard() {
   const { getToken } = useAuth();
@@ -31,6 +32,9 @@ export default function Dashboard() {
     recentOrders: [],
   });
   const [range, setRange] = useState(30);
+
+  const [insight, setInsight] = useState(null);
+  const [insightLoading, setInsightLoading] = useState(true);
 
   const dashboardCardsData = [
     {
@@ -70,8 +74,22 @@ export default function Dashboard() {
     setLoading(false);
   };
 
+  const fetchInsight = async () => {
+    try {
+      const token = await getToken();
+      const { data } = await axios.get("/api/store/ai-insight", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setInsight(data.insight);
+    } catch (error) {
+      // Non-critical widget; fail silently and just show the empty state.
+    }
+    setInsightLoading(false);
+  };
+
   useEffect(() => {
     fetchDashboardData();
+    fetchInsight();
   }, []);
 
   if (loading) return <Loading />;
@@ -100,6 +118,14 @@ export default function Dashboard() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* AI Store Health */}
+      <div className="mt-10">
+        <h2 className="text-2xl text-muted mb-6">
+          This <span className="text-white font-semibold">Week</span>
+        </h2>
+        <AiInsightCard title="Store Health" insight={insight} loading={insightLoading} />
       </div>
 
       {/* Revenue Trend */}

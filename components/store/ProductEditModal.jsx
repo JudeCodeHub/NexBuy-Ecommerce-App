@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { useAuth } from "@clerk/nextjs";
 import axios from "axios";
-import { Loader2, UploadCloud, X } from "lucide-react";
+import { Loader2, SparklesIcon, UploadCloud, X } from "lucide-react";
 import CustomSelect from "@/components/CustomSelect";
 
 const categories = [
@@ -54,6 +54,7 @@ const ProductEditModal = ({ product, onClose, onSaved }) => {
   });
   const [productInfo, setProductInfo] = useState({
     name: product.name,
+    brand: product.brand || "",
     description: product.description,
     mrp: product.mrp,
     price: product.price,
@@ -61,8 +62,40 @@ const ProductEditModal = ({ product, onClose, onSaved }) => {
   });
   const [loading, setLoading] = useState(false);
 
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState(null);
+
   const onChangeHandler = (e) => {
     setProductInfo({ ...productInfo, [e.target.name]: e.target.value });
+  };
+
+  const onBoostWithAi = async () => {
+    if (!productInfo.name || !productInfo.description || !productInfo.category) {
+      return toast.error("Add a name, description and category first");
+    }
+    setAiLoading(true);
+    try {
+      const token = await getToken();
+      const { data } = await axios.post(
+        "/api/seller/ai/improve-listing",
+        {
+          brand: productInfo.brand,
+          title: productInfo.name,
+          description: productInfo.description,
+          category: productInfo.category,
+          currentPrice: Number(productInfo.price),
+          currency: process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || "USD",
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setProductInfo({ ...productInfo, name: data.title, description: data.description });
+      setAiSuggestion(data);
+      toast.success("Listing boosted — review before saving");
+    } catch (error) {
+      toast.error(error?.response?.data?.error || error.message);
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const onSubmitHandler = async (e) => {
@@ -80,6 +113,7 @@ const ProductEditModal = ({ product, onClose, onSaved }) => {
       const formData = new FormData();
       formData.append("productId", product.id);
       formData.append("name", productInfo.name);
+      formData.append("brand", productInfo.brand);
       formData.append("description", productInfo.description);
       formData.append("mrp", productInfo.mrp);
       formData.append("price", productInfo.price);
@@ -199,15 +233,25 @@ const ProductEditModal = ({ product, onClose, onSaved }) => {
                 </div>
               </div>
 
-              <FormField
-                label="Name"
-                name="name"
-                type="text"
-                onChange={onChangeHandler}
-                value={productInfo.name}
-                placeholder="Enter product name"
-                required
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  label="Name"
+                  name="name"
+                  type="text"
+                  onChange={onChangeHandler}
+                  value={productInfo.name}
+                  placeholder="Enter product name"
+                  required
+                />
+                <FormField
+                  label="Brand"
+                  name="brand"
+                  type="text"
+                  onChange={onChangeHandler}
+                  value={productInfo.brand}
+                  placeholder="Optional"
+                />
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <FormField
@@ -229,20 +273,63 @@ const ProductEditModal = ({ product, onClose, onSaved }) => {
                   required
                 />
               </div>
+
+              {aiSuggestion?.suggestedPriceRange && (
+                <p className="-mt-3 text-xs text-accent">
+                  AI suggests {process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || "$"}
+                  {aiSuggestion.suggestedPriceRange.min}–
+                  {process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || "$"}
+                  {aiSuggestion.suggestedPriceRange.max}
+                  {aiSuggestion.priceReasoning ? ` — ${aiSuggestion.priceReasoning}` : ""}
+                </p>
+              )}
             </div>
 
             {/* Right column */}
             <div className="flex flex-col gap-5">
-              <FormField
-                label="Description"
-                name="description"
-                onChange={onChangeHandler}
-                value={productInfo.description}
-                placeholder="Enter product description"
-                rows={4}
-                textarea
-                required
-              />
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label htmlFor="edit-description" className="block text-sm font-medium text-white">
+                    Description
+                  </label>
+                  <button
+                    type="button"
+                    onClick={onBoostWithAi}
+                    disabled={aiLoading}
+                    className="flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-accent-hover disabled:opacity-50 transition-colors"
+                  >
+                    {aiLoading ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : (
+                      <SparklesIcon size={13} />
+                    )}
+                    {aiLoading ? "Boosting..." : "Boost with AI"}
+                  </button>
+                </div>
+                <textarea
+                  id="edit-description"
+                  name="description"
+                  onChange={onChangeHandler}
+                  value={productInfo.description}
+                  placeholder="Enter product description"
+                  rows={4}
+                  required
+                  className="w-full min-h-24 resize-y bg-white/5 text-slate-100 placeholder-slate-500 border border-white/10 focus:border-accent rounded-lg px-4 py-3 outline-none transition-colors"
+                />
+              </div>
+
+              {aiSuggestion?.tags?.length > 0 && (
+                <div className="-mt-3 flex flex-wrap gap-2">
+                  {aiSuggestion.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-accent/15 text-accent"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-white mb-2">
