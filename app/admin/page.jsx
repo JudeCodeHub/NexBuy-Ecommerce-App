@@ -1,6 +1,7 @@
 "use client";
 import Loading from "@/components/Loading";
 import OrdersAreaChart from "@/components/OrdersAreaChart";
+import AiInsightCard from "@/components/AiInsightCard";
 import { useAuth } from "@clerk/nextjs";
 import {
   CircleDollarSignIcon,
@@ -25,6 +26,9 @@ export default function AdminDashboard() {
     stores: 0,
     allOrders: [],
   });
+
+  const [insight, setInsight] = useState(null);
+  const [insightLoading, setInsightLoading] = useState(true);
 
   const dashboardCardsData = [
     {
@@ -56,8 +60,22 @@ export default function AdminDashboard() {
     setLoading(false);
   };
 
+  const fetchInsight = async () => {
+    try {
+      const token = await getToken();
+      const { data } = await axios.get("/api/admin/ai-insight", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setInsight(data.insight);
+    } catch (error) {
+      // Non-critical widget; fail silently and just show the empty state.
+    }
+    setInsightLoading(false);
+  };
+
   useEffect(() => {
     fetchDashboardData();
+    fetchInsight();
   }, []);
 
   if (loading) return <Loading />;
@@ -91,6 +109,14 @@ export default function AdminDashboard() {
       {/* Area Chart */}
       <div className="w-full bg-panel border border-white/10 rounded-2xl p-6 mt-6">
         <OrdersAreaChart allOrders={dashboardData.allOrders} />
+      </div>
+
+      {/* AI Platform Insights */}
+      <div className="mt-6">
+        <h2 className="text-2xl text-muted mb-6">
+          Platform <span className="text-white font-semibold">Insights</span>
+        </h2>
+        <AiInsightCard title="Weekly Digest" insight={insight} loading={insightLoading} />
       </div>
     </div>
   );

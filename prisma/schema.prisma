@@ -27,6 +27,7 @@ model User {
 model Product {
     id          String   @id @default(cuid())
     name        String
+    brand       String?
     description String
     mrp         Float
     price       Float
@@ -156,6 +157,17 @@ model Coupon {
     isPublic    Boolean
     expiresAt   DateTime
     createdAt   DateTime @default(now())
+}
+
+// AI-generated insight snapshots: seller-scoped "store_health" reports and admin-scoped "platform_digest" reports
+model AiInsight {
+    id        String   @id @default(cuid())
+    sellerId  String? // null = platform-wide (admin) insight
+    type      String // "store_health" | "platform_digest"
+    content   Json
+    createdAt DateTime @default(now())
+
+    @@index([sellerId, type])
 }
 
 // Required for creating a Store: userId, name, username, email, contact, logo, description, address (optional: , status, isActive)

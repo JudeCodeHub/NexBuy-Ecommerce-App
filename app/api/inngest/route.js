@@ -7,6 +7,7 @@ import {
   deleteCouponOnExpiry,
   sendOrderConfirmedEmail,
 } from "../../../inngest/functions";
+import { generateWeeklyInsights } from "../../../inngest/storeHealth";
 
 // Create an API that serves zero functions
 export const { GET, POST, PUT } = serve({
@@ -17,5 +18,6 @@ export const { GET, POST, PUT } = serve({
     syncUserdeletion,
     deleteCouponOnExpiry,
     sendOrderConfirmedEmail,
+    generateWeeklyInsights,
   ],
 });
