@@ -19,7 +19,7 @@ const AdminNavbar = () => {
         <p className="text-sm text-muted max-sm:hidden">
           Hi, <span className="text-slate-200 font-medium">{user?.firstName}</span>
         </p>
-        <UserButton />
+        <UserButton userProfileMode="navigation" userProfileUrl="/profile" />
       </div>
     </div>
   );

@@ -130,7 +130,7 @@ const Navbar = () => {
                 Login
               </button>
             ) : (
-              <UserButton>
+              <UserButton userProfileMode="navigation" userProfileUrl="/profile">
                 <UserButton.MenuItems>
                   {isAdmin && (
                     <UserButton.Action
@@ -147,7 +147,7 @@ const Navbar = () => {
           {/* Mobile User Button  */}
           <div className="sm:hidden">
             {user ? (
-              <UserButton>
+              <UserButton userProfileMode="navigation" userProfileUrl="/profile">
                 <UserButton.MenuItems>
                   <UserButton.Action
                     labelIcon={<ShoppingCart size={16} />}

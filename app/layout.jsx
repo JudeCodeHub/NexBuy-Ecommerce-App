@@ -3,8 +3,13 @@ import { Toaster } from "react-hot-toast";
 import StoreProvider from "@/app/StoreProvider";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
+import { clerkAppearance } from "@/lib/clerkAppearance";
 
-const outfit = Outfit({ subsets: ["latin"], weight: ["400", "500", "600"] });
+const outfit = Outfit({
+    subsets: ["latin"],
+    weight: ["400", "500", "600"],
+    variable: "--font-outfit",
+});
 
 export const metadata = {
     title: "NexBuy. - Shop smarter",
@@ -13,9 +18,9 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
     return (
-        <ClerkProvider>
+        <ClerkProvider appearance={clerkAppearance}>
         <html lang="en">
-            <body className={`${outfit.className} antialiased bg-neutral-950 text-slate-100`}>
+            <body className={`${outfit.className} ${outfit.variable} antialiased bg-neutral-950 text-slate-100`}>
                 <StoreProvider>
                     <Toaster />
                     {children}
